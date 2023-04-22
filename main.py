@@ -194,9 +194,9 @@ def config_global_variable(args):
 
 if __name__ == '__main__':
     args = args_parser()
-    args.if_wandb = True
-    args.wandb_project_name = 'test_local'
-    args.wandb_run_name = 'test_local'
+    # args.if_wandb = True
+    # args.wandb_project_name = 'test_local'
+    # args.wandb_run_name = 'test_local'
 
     device = args.device
     num_of_malicious = args.num_of_malicious
