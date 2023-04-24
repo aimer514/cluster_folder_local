@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import random
 import math
-
+import os
 class OwnCifar10(datasets.CIFAR10):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -89,11 +89,21 @@ def load_dataset(dataset_name, path):
         transforms_list.append(transforms.ToTensor())
 
         mnist_transform = transforms.Compose(transforms_list)
-        train_dataset = OwnCifar10(root = '../data', train=True, download=True, transform=mnist_transform)
-        test_dataset = OwnCifar10(root = '../data', train=False, download=True, transform=mnist_transform)
+        train_dataset = OwnCifar10(root = path, train=True, download=True, transform=mnist_transform)
+        test_dataset = OwnCifar10(root = path, train=False, download=True, transform=mnist_transform)
         train_dataset.test = True
         test_dataset.test = True
         train_dataset.targets, test_dataset.targets = torch.LongTensor(train_dataset.targets), torch.LongTensor(test_dataset.targets)
+        return train_dataset, test_dataset
+   
+   elif dataset_name == 'tinyimagenet':
+        transforms_list = []
+        transforms_list.append(transforms.ToTensor())
+        mnist_transform = transforms.Compose(transforms_list)
+
+        train_dataset = load_imagenet(os.path.join(path, 'tiny-imagenet-pt', 'imagenet_train.pt'), transform=mnist_transform)
+        test_dataset = load_imagenet(os.path.join(path, 'tiny-imagenet-pt', 'imagenet_val.pt'), transform=mnist_transform)
+        
         return train_dataset, test_dataset
    
 def distribution_data_dirchlet(dataset, n_classes = 10, num_of_agent = 10):
