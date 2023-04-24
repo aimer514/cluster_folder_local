@@ -6,6 +6,8 @@ global using_wandb
 from Aggregation import *
 
 def trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args):
+    init_sparsefed(temp_model)
+    init_foolsgold(temp_model)
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
@@ -95,6 +97,8 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
 
 
 def normal_train(temp_model, train_loader_list, test_loader, args):
+    init_sparsefed(temp_model)
+    init_foolsgold(temp_model)
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
