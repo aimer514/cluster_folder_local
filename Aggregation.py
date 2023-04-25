@@ -15,11 +15,11 @@ import sklearn.metrics.pairwise as smp
 import wandb
 from defence import *
 
-device = None
-num_of_agent = None
-using_wandb = None
-num_of_malicious = None
-lr = 1
+agg_device = None
+agg_num_of_agent = None
+agg_using_wandb = None
+agg_num_of_malicious = None
+agg_lr = 1
 
 def euclid(v1, v2):
     diff = v1 - v2
@@ -39,12 +39,12 @@ def pairwise_distance(w_locals):
     return distance
 
 def sparse_fed_topk(vec, k):
-    topkVals = torch.zeros(k).to(device = device)
-    topkIndices = torch.zeros(k).long().to(device = device)
+    topkVals = torch.zeros(k).to(device = agg_device)
+    topkIndices = torch.zeros(k).long().to(device = agg_device)
     torch.topk(vec**2, k, sorted=False, out=(topkVals, topkIndices))
 
-    ret = torch.zeros_like(vec).to(device = device)
-    ret[topkIndices] = vec[topkIndices].to(device = device)
+    ret = torch.zeros_like(vec).to(device = agg_device)
+    ret[topkIndices] = vec[topkIndices].to(device = agg_device)
     return ret
 
 def weighted_average_oracle(agent_updates_dict,weight):
@@ -64,13 +64,13 @@ def init_sparsefed(model):
     global Vvelocity
     global Verror
     shape = (len(parameters_to_vector(model.parameters())),)
-    Vvelocity = torch.zeros(shape).to(device = device)
-    Verror = torch.zeros(shape).to(device = device)
+    Vvelocity = torch.zeros(shape).to(device = agg_device)
+    Verror = torch.zeros(shape).to(device = agg_device)
 
 def init_foolsgold(model):
     global foolsgold_memory
     shape = len(parameters_to_vector(model.parameters()))
-    foolsgold_memory = np.zeros((num_of_agent, shape))
+    foolsgold_memory = np.zeros((agg_num_of_agent, shape))
 
 def extra_analysis(aggregation_dict):
     normal_trigger_update = [aggregation_dict[0]]
@@ -92,7 +92,7 @@ def extra_analysis(aggregation_dict):
     print(topk_trigger_cos)
     print('normal vs normal update cos')
     print(norm_norm)
-    if using_wandb:
+    if agg_using_wandb:
         wandb.log({"old_trigger": normal_trigger_cos, "trigger_generation":normal_gene_trigger_cos, "topk_trigger_generation":topk_trigger_cos, "normal":norm_norm})
 
 def single_analysis(aggregation_dict):
@@ -112,7 +112,7 @@ def single_analysis(aggregation_dict):
     print(normal_normal)
     print('trigger vs trigger update cos')
     print(trigger_trigger)
-    if using_wandb:
+    if agg_using_wandb:
         wandb.log({"trigger_trigger": trigger_trigger, "trigger_normal": trigger_normal,  "normal_normal":normal_normal})
 
 def benign_analysis(aggregation_dict):
@@ -120,7 +120,7 @@ def benign_analysis(aggregation_dict):
     for i in range(0, 50):
         normal_update.append(aggregation_dict[i])
     normal_normal = num_dif_of_one_list(normal_update, 'cos')
-    if using_wandb:
+    if agg_using_wandb:
         wandb.log({"normal_normal":normal_normal})
 
 def aggregation_time(model, agent_updates_dict, clip = 0, underwater = False, agg_way = None, random_list = None):
@@ -143,15 +143,15 @@ def aggregation_time(model, agent_updates_dict, clip = 0, underwater = False, ag
           accepted_models_dict = {}
           escaped_num = 0
           for i in range(len(benign_id)):
-              if benign_id[i] < num_of_malicious:
+              if benign_id[i] < agg_num_of_malicious:
                 escaped_num += 1
-              accepted_models_dict[i] = torch.tensor(weights[benign_id[i], :]).to(device)
+              accepted_models_dict[i] = torch.tensor(weights[benign_id[i], :]).to(agg_device)
           sm_updates, total_data = 0, 0
           for _id, update in accepted_models_dict.items():
               n_agent_data = 1
               sm_updates += n_agent_data * update
               total_data += n_agent_data
-          if using_wandb:
+          if agg_using_wandb:
             wandb.log({"escaped_num": escaped_num})
           return sm_updates / total_data, benign_id
 
@@ -159,7 +159,7 @@ def aggregation_time(model, agent_updates_dict, clip = 0, underwater = False, ag
             """ classic fed avg """
             sm_updates, total_data = 0, 0
             for _id, update in agent_updates_dict.items():
-                if underwater == True and _id < num_of_malicious:
+                if underwater == True and _id < agg_num_of_malicious:
                   continue
                 if random_list != None and _id not in random_list:
                   continue
@@ -213,7 +213,7 @@ def aggregation_time(model, agent_updates_dict, clip = 0, underwater = False, ag
               return result
           
         def trimmed_mean(agent_updates_dict):
-          c = num_of_malicious
+          c = agg_num_of_malicious
           n = len(agent_updates_dict) - 2 * c
           update_list = []
           for _id, update in agent_updates_dict.items():
@@ -232,10 +232,10 @@ def aggregation_time(model, agent_updates_dict, clip = 0, underwater = False, ag
           return result
         
         #0.001 for sign
-        server_lr = lr
+        server_lr = agg_lr
         n_params = len(agent_updates_dict[0])
         
-        lr_vector = torch.Tensor([server_lr] * n_params).to(device = device)
+        lr_vector = torch.Tensor([server_lr] * n_params).to(device = agg_device)
 
         if clip != 0:
             clip_updates(agent_updates_dict, clip)
@@ -399,7 +399,7 @@ def get_average_norm(aggregation_dict):
   sum = 0
   count = 0
   for _id, update in aggregation_dict.items():
-    if _id >= num_of_malicious:
+    if _id >= agg_num_of_malicious:
       count += 1
       sum += torch.norm(update, p = 2).item()
   
@@ -472,12 +472,12 @@ def get_batch_norm_list(input_model):
 
 def initialize_batch_norm_list(input_model, batch_norm_list):
     agent_list = []
-    for i in range(num_of_agent + 1):
+    for i in range(agg_num_of_agent + 1):
         agent_list.append(dict())
     
     model_state_dict = input_model.state_dict()
 
-    for i in range(num_of_agent + 1):
+    for i in range(agg_num_of_agent + 1):
       for name in batch_norm_list:
           agent_list[i][name] = copy.deepcopy(model_state_dict[name].detach())
 

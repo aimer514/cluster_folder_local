@@ -11,7 +11,7 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 import math
 import copy
-device = None
+U_device = None
 def double_conv(in_channels, out_channels):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, 3, padding=1),
@@ -45,7 +45,7 @@ class UNet(nn.Module):
             nn.BatchNorm2d(out_channel),
         )
 
-    def forward(self, x, heatmap = None):
+    def forward(self, x):
         conv1 = self.dconv_down1(x)
         x = self.maxpool(conv1)
 
@@ -74,10 +74,6 @@ class UNet(nn.Module):
 
         out = F.tanh(out)
 
-        if heatmap != None:
-          heatmap = heatmap.repeat(1, 3, 1, 1).to(device = device)
-          temp_zero = torch.zeros_like(out).to(device = device)
-          out = torch.where(heatmap > 0, out, temp_zero)
         return out
 
 def clip_image(x):

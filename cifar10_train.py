@@ -8,8 +8,8 @@ def test_model(model, test_loader):
     correctly_labeled_samples = 0
     model.eval()
     for batch_idx, (data, target, _) in enumerate(test_loader):
-        data = data.to(device = device)
-        target = target.to(device = device)
+        data = data.to(device = U_device)
+        target = target.to(device = U_device)
         output = model(data)
         total_test_number += len(output)
         _, pred_labels = torch.max(output, 1)
@@ -35,17 +35,16 @@ def poison_data_only_target(data, target, target_label):
   random_perm = torch.randperm(len(data))
   data = data[random_perm]
   target = target[random_perm]
-  return data.to(device = device),target.to(device = device)
+  return data.to(device = U_device),target.to(device = U_device)
 
-def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_bound = 6.5, poison_frac = 0.2, heatmap = None):
+def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_bound = 6.5, poison_frac = 0.2):
     data = copy.deepcopy(data)
     target = copy.deepcopy(target)
 
     target_tensor = []
     poison_number = math.floor(len(target) * poison_frac)
-    if heatmap != None:
-      heatmap = heatmap.to(device = device)
-    produced_noise = noise_model(data.to(device = device), heatmap).detach()
+
+    produced_noise = noise_model(data.to(device = U_device)).detach()
     for index in range(poison_number):
             target[index] = target_label
 
@@ -53,25 +52,24 @@ def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_
       norm_cut = max(1, torch.norm(produced_noise[tensor_index], p=2) / norm_bound)
       produced_noise[tensor_index] = produced_noise[tensor_index] / norm_cut
 
-    data[0:poison_number] = clip_image(data[0:poison_number].to(device = device) + produced_noise[0:poison_number].to(device = device))
+    data[0:poison_number] = clip_image(data[0:poison_number].to(device = U_device) + produced_noise[0:poison_number].to(device = U_device))
 
 
     random_perm = torch.randperm(len(data))
     data = data[random_perm]
     target = target[random_perm]
 
-    return data.to(device = device), target.to(device = device)
+    return data.to(device = U_device), target.to(device = U_device)
     
-def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 6.5,  use_heatmap = False):
+def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 6.5):
     noise_model.eval()
     total_test_number = 0
     correctly_labeled_samples = 0
     model.eval()
-    for batch_idx, (data, target, heatmap) in enumerate(test_loader):
+    for batch_idx, (data, target) in enumerate(test_loader):
         data, target = poison_data_only_target(data, target, target_label)
-        if not use_heatmap:
-          heatmap = None
-        noise = noise_model(data, heatmap)
+
+        noise = noise_model(data)
         norm_cut = max(1, torch.norm(noise, p=2) / (norm_bound * math.floor(math.sqrt(test_loader.batch_size))))
         noise = noise / norm_cut
         #print(torch.norm(noise, p = 2))
@@ -93,10 +91,10 @@ def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 
     print('mali accuracy  = {}'.format(acc))
     return acc
 
-def train_noise_model(classification_model, target_label, agent_train_loader, norm_for_one_sample, use_heatmap = False, input_noise_model = None):
+def train_noise_model(classification_model, target_label, agent_train_loader, norm_for_one_sample, input_noise_model = None):
     classification_model.eval()
     if input_noise_model == None:
-      noise_model  = UNet(3).to(device = device)
+      noise_model  = UNet(3).to(device = U_device)
     else:
       noise_model = input_noise_model
       
@@ -108,13 +106,12 @@ def train_noise_model(classification_model, target_label, agent_train_loader, no
 
     for epoch in range(backdoor_epoch_num):
         temp_count = 0
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
 
             noise_optimizer.zero_grad()
             data, target = poison_data_only_target(data, target, target_label)
-            if not use_heatmap:
-              heatmap = None
-            noise = noise_model(data, heatmap)
+
+            noise = noise_model(data)
             if temp_count % 50 == 0:
               pass
               #print(torch.norm(noise, p=2))
@@ -137,7 +134,7 @@ def train_noise_model(classification_model, target_label, agent_train_loader, no
     classification_model.train()
     return noise_model
 
-def train_mali_model_with_noise(classification_model, noise_model, target_label, agent_train_loader, norm_for_one_sample, use_heatmap = False):
+def train_mali_model_with_noise(classification_model, noise_model, target_label, agent_train_loader, norm_for_one_sample):
 
     training_epoch = 10
     noise_model.eval()
@@ -150,11 +147,10 @@ def train_mali_model_with_noise(classification_model, noise_model, target_label,
         total_loss = 0
         temp_count = 0
         
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
-            if not use_heatmap:
-              heatmap = None
-            data, target = poison_data_add_noise(data, target, target_label, noise_model  = noise_model, norm_bound = norm_for_one_sample, poison_frac = poison_frac, heatmap = heatmap)
+
+            data, target = poison_data_add_noise(data, target, target_label, noise_model  = noise_model, norm_bound = norm_for_one_sample, poison_frac = poison_frac)
 
             output = classification_model(data)
 
@@ -168,19 +164,9 @@ def train_mali_model_with_noise(classification_model, noise_model, target_label,
             temp_count += 1
             if temp_count % 500 == 0:
               print(loss)
-            #if epoch % 10 == 0:
-            #  print('malicious accuracy for classification of malicious agent is (with heat map = {})'.format(use_heatmap))
-            #  acc = test_mali_noise(classification_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample, use_heatmap = use_heatmap)
-            #  noise_model.eval()
+
     noise_model.train()
-        #print('malicious accuracy for classification of malicious agent is (with heat map = {})'.format(use_heatmap))
-        #acc = test_mali_noise(classification_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample, use_heatmap = use_heatmap)
-        #print('benign accuracy for classification of malicious agent is (with heat map = {})'.format(use_heatmap))
-        #test_model(classification_model, test_loader)
-        #if acc > 0.85:
-        #  poison_frac = 0.2
-        #else:
-        #  poison_frac = 0.2
+
 
 
 def train_benign_model(classification_model, agent_train_loader):
@@ -191,8 +177,8 @@ def train_benign_model(classification_model, agent_train_loader):
     for epoch in range(training_epoch):
         temp_count = 0
         for batch_idx, (data, target,_) in enumerate(agent_train_loader):
-            data = data.to(device = device)
-            target = target.to(device = device)
+            data = data.to(device = U_device)
+            target = target.to(device = U_device)
             benign_optimizer.zero_grad()
             output = classification_model(data)
 
@@ -285,7 +271,7 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     data = data[random_perm]
     target = target[random_perm]
 
-    return data.to(device = device), target.to(device = device)
+    return data.to(device = U_device), target.to(device = U_device)
 
 def test_mali_normal_trigger(model, test_loader, target_label):
 
@@ -293,7 +279,7 @@ def test_mali_normal_trigger(model, test_loader, target_label):
     total_test_number = 0
     correctly_labeled_samples = 0
     model.eval()
-    for batch_idx, (data, target, heatmap) in enumerate(test_loader):
+    for batch_idx, (data, target) in enumerate(test_loader):
         data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 1.0)
         output = model(data)
         total_test_number += len(output)
@@ -320,7 +306,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
         total_loss = 0
         temp_count = 0
         
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             #0.05 for vgg, 0.2 for resnet
             data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = agent_no)
@@ -354,7 +340,7 @@ def train_mali_model_with_normal_trigger_topk_mode(classification_model, target_
     mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             
             data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = -1)
@@ -379,7 +365,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
         total_loss = 0
         temp_count = 0
         
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             #0.05 for vgg, 0.2 for resnet
             data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = agent_no)
@@ -411,7 +397,7 @@ def train_mali_model_with_normal_trigger_htb(classification_model, target_label,
         total_loss = 0
         temp_count = 0
         
-        for batch_idx, (data, target, heatmap) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             #0.05 for vgg, 0.2 for resnet
             data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = agent_no)

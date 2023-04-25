@@ -1,15 +1,16 @@
-from AutoEncoder import *
 import torch
 import copy
 import numpy as np
+from MNISTAutoencoder import *
 
 def test_model(model, test_loader):
+
     total_test_number = 0
     correctly_labeled_samples = 0
     model.eval()
-    for batch_idx, (data, target, _) in enumerate(test_loader):
-        data = data.to(device = auto_device)
-        target = target.to(device = auto_device)
+    for batch_idx, (data, target) in enumerate(test_loader):
+        data = data.to(device = m_device)
+        target = target.to(device = m_device)
         output = model(data)
         total_test_number += len(output)
         _, pred_labels = torch.max(output, 1)
@@ -21,6 +22,7 @@ def test_model(model, test_loader):
     print('benign accuracy  = {}'.format(acc))
     return acc
 
+import math
 def clip_image(x):
   return torch.clamp(x, 0, 1.0)
 
@@ -33,7 +35,7 @@ def poison_data_only_target(data, target, target_label):
   random_perm = torch.randperm(len(data))
   data = data[random_perm]
   target = target[random_perm]
-  return data.to(device = auto_device),target.to(device = auto_device)
+  return data.to(device = m_device),target.to(device = m_device)
 
 def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_bound = 6.5, poison_frac = 0.2):
     data = copy.deepcopy(data)
@@ -41,8 +43,7 @@ def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_
 
     target_tensor = []
     poison_number = math.floor(len(target) * poison_frac)
-
-    produced_noise = noise_model(data.to(device = auto_device)).detach()
+    produced_noise = noise_model(data.to(device = m_device)).detach()
     for index in range(poison_number):
             target[index] = target_label
 
@@ -50,14 +51,14 @@ def poison_data_add_noise(data, target, target_label, noise_model  = None, norm_
       norm_cut = max(1, torch.norm(produced_noise[tensor_index], p=2) / norm_bound)
       produced_noise[tensor_index] = produced_noise[tensor_index] / norm_cut
 
-    data[0:poison_number] = clip_image(data[0:poison_number].to(device = auto_device) + produced_noise[0:poison_number].to(device = auto_device))
+    data[0:poison_number] = clip_image(data[0:poison_number].to(device = m_device) + produced_noise[0:poison_number].to(device = m_device))
 
 
     random_perm = torch.randperm(len(data))
     data = data[random_perm]
     target = target[random_perm]
 
-    return data.to(device = auto_device), target.to(device = auto_device)
+    return data.to(device = m_device), target.to(device = m_device)
     
 def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 6.5):
     noise_model.eval()
@@ -66,7 +67,6 @@ def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 
     model.eval()
     for batch_idx, (data, target) in enumerate(test_loader):
         data, target = poison_data_only_target(data, target, target_label)
-
         noise = noise_model(data)
         norm_cut = max(1, torch.norm(noise, p=2) / (norm_bound * math.floor(math.sqrt(test_loader.batch_size))))
         noise = noise / norm_cut
@@ -92,7 +92,7 @@ def test_mali_noise(model, noise_model, test_loader, target_label, norm_bound = 
 def train_noise_model(classification_model, target_label, agent_train_loader, norm_for_one_sample, input_noise_model = None):
     classification_model.eval()
     if input_noise_model == None:
-      noise_model  = Autoencoder().to(device = auto_device).to(device = auto_device)
+      noise_model  = MNISTAutoencoder().to(device = m_device)
     else:
       noise_model = input_noise_model
       
@@ -100,12 +100,14 @@ def train_noise_model(classification_model, target_label, agent_train_loader, no
     noise_optimizer = torch.optim.Adam(noise_model.parameters(), lr = 0.01)
     final_model = None
     best_acc = 0
-    backdoor_epoch_num = 30
-
+    backdoor_epoch_num = 50
+    
+    
     for epoch in range(backdoor_epoch_num):
         temp_count = 0
         for batch_idx, (data, target) in enumerate(agent_train_loader):
-
+            # if batch_idx > batch_limit:
+            #   break
             noise_optimizer.zero_grad()
             data, target = poison_data_only_target(data, target, target_label)
 
@@ -129,6 +131,7 @@ def train_noise_model(classification_model, target_label, agent_train_loader, no
             if temp_count % 500 == 0:
               print(loss)
 
+        #print(start_mali_accuracy)
     classification_model.train()
     return noise_model
 
@@ -137,17 +140,18 @@ def train_mali_model_with_noise(classification_model, noise_model, target_label,
     training_epoch = 5
     noise_model.eval()
     classification_model.train()
-    poison_frac = 0.2
-
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    #0.05 for vgg, 0.2 for resnet
+    # global_poison_frac = 0.2
+    #0.01 for vgg, 0.1 for resnet
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
-        
+        global_poison_frac = 0.2
         for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
 
-            data, target = poison_data_add_noise(data, target, target_label, noise_model  = noise_model, norm_bound = norm_for_one_sample, poison_frac = poison_frac)
+            data, target = poison_data_add_noise(data, target, target_label, noise_model  = noise_model, norm_bound = norm_for_one_sample, poison_frac = global_poison_frac)
 
             output = classification_model(data)
 
@@ -161,21 +165,20 @@ def train_mali_model_with_noise(classification_model, noise_model, target_label,
             temp_count += 1
             if temp_count % 500 == 0:
               print(loss)
-
     noise_model.train()
 
 
 
 def train_benign_model(classification_model, agent_train_loader):
     #5
-    training_epoch = 5
+    training_epoch = 1
     classification_model.train()
-    benign_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.001, )
+    benign_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         temp_count = 0
         for batch_idx, (data, target,_) in enumerate(agent_train_loader):
-            data = data.to(device = auto_device)
-            target = target.to(device = auto_device)
+            data = data.to(device = m_device)
+            target = target.to(device = m_device)
             benign_optimizer.zero_grad()
             output = classification_model(data)
 
@@ -191,6 +194,7 @@ def train_benign_model(classification_model, agent_train_loader):
         #print('benign accuracy for benign model is')
         #test_model(classification_model, test_loader)
 
+import numpy as np
 def get_topk(model, mali_update, topk_ratio = 0.2):
     mali_layer_list = []
     parameter_distribution = [0]
@@ -234,13 +238,14 @@ def model_dist_norm_var(model, target_params_variables, norm=2):
 
     return torch.norm(sum_var, norm)
 
+
 def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = -1):
     data = copy.deepcopy(data)
     target = copy.deepcopy(target)
     
     target_tensor = []
     poison_number = math.floor(len(target) * poison_frac)
-    trigger_value = 0
+    trigger_value = 1
     pattern_type = [[[0, 0], [0, 1], [0, 2], [0, 3]],
     [[0, 6], [0, 7], [0, 8], [0, 9]],
     [[3, 0], [3, 1], [3, 2], [3, 3]],
@@ -248,7 +253,7 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     if agent_no == -1:
         for index in range(poison_number):
                 target[index] = target_label
-                for channel in range(3):
+                for channel in range(1):
                   for i in range(len(pattern_type)):
                       for j in range(len(pattern_type[i])):
                           pos = pattern_type[i][j]
@@ -256,7 +261,7 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     else:
         for index in range(poison_number):
             target[index] = target_label
-            for channel in range(3):
+            for channel in range(1):
               for j in range(len(pattern_type[agent_no])):
                   pos = pattern_type[agent_no][j]
                   data[index][channel][pos[0]][pos[1]] = trigger_value
@@ -267,7 +272,7 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     data = data[random_perm]
     target = target[random_perm]
 
-    return data.to(device = auto_device), target.to(device = auto_device)
+    return data.to(device = m_device), target.to(device = m_device)
 
 def test_mali_normal_trigger(model, test_loader, target_label):
 
@@ -276,7 +281,9 @@ def test_mali_normal_trigger(model, test_loader, target_label):
     correctly_labeled_samples = 0
     model.eval()
     for batch_idx, (data, target) in enumerate(test_loader):
-        data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 1.0)
+        #data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 1.0)
+        data = data.to(m_device)
+        target = target.to(m_device)
         output = model(data)
         total_test_number += len(output)
         _, pred_labels = torch.max(output, 1)
@@ -297,7 +304,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
     training_epoch = 5
 
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -333,7 +340,7 @@ def train_mali_model_with_normal_trigger_topk_mode(classification_model, target_
 
     training_epoch = 5
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         
         for batch_idx, (data, target) in enumerate(agent_train_loader):
@@ -356,7 +363,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
     training_epoch = 5
 
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -388,7 +395,7 @@ def train_mali_model_with_normal_trigger_htb(classification_model, target_label,
     classification_model.train()
     training_epoch = 5
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -413,4 +420,6 @@ def train_mali_model_with_normal_trigger_htb(classification_model, target_label,
             update = parameters_to_vector(classification_model.parameters()).double() - initial_global_model_params
             final_global_model_params = initial_global_model_params + 80 * update
             vector_to_parameters(final_global_model_params, classification_model.parameters())
-            
+
+
+

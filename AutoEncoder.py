@@ -14,7 +14,7 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 import copy
 
-device = None
+auto_device = None
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
@@ -46,13 +46,10 @@ class Autoencoder(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, x, heatmap = None):
+    def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
-        if heatmap != None:
-          heatmap = heatmap.to(device = device)
-          temp_zero = torch.zeros_like(x).to(device = device)
-          x = torch.where(heatmap > 0, x, temp_zero)
+
         return x
 
 def clip_image(x):
