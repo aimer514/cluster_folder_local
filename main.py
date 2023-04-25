@@ -137,7 +137,7 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
             load_batch_norm(temp_model, 0, batch_norm_list, agent_batch_norm_list)
             if agent < num_of_malicious and epoch_num >= 0 and rnd_num < possible:
                 if attack_mode == 'DBA':
-                    train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randInt(0,3))
+                    train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randint(0,3))
                     
                 elif attack_mode == 'durable':
                     train_mali_model_with_normal_trigger_topk_mode(temp_model, target_label, train_loader_list[agent])
