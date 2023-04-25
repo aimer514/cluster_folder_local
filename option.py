@@ -20,7 +20,7 @@ def args_parser():
     parser.add_argument('--total_epoch', type=int, default=200,
                 help="number of total epochs")
     
-    parser.add_argument('--possibility', type=int, default=0.25,
+    parser.add_argument('--possibility', type=float, default=0.25,
             help="possibility of selecting malicious agents")
     
     parser.add_argument('--target_label', type=int, default=7,
