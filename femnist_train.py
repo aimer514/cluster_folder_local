@@ -212,7 +212,7 @@ def get_topk(model, mali_update, topk_ratio = 0.2):
     count = 0
     for _, parms in model.named_parameters():
         if parms.requires_grad:
-            gradients_length = len(parms.grad.abs().view(-1))
+            gradients_length = len(parms.view(-1))
             mask_flat = mask_flat_all_layer[count:count + gradients_length]
             mali_layer_list.append(mask_flat.reshape(parms.size()).cuda())
             count += gradients_length
@@ -222,7 +222,7 @@ def get_topk(model, mali_update, topk_ratio = 0.2):
 def apply_grad_mask(model, mask_grad_list):
     mask_grad_list_copy = iter(mask_grad_list)
     for name, parms in model.named_parameters():
-        if parms.requires_grad:
+        if parms.requires_grad and parms.grad != None:
             parms.grad = parms.grad * next(mask_grad_list_copy)
 
 def model_dist_norm_var(model, target_params_variables, norm=2):

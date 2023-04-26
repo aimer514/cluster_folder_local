@@ -452,6 +452,8 @@ if __name__ == '__main__':
             noise_model = UNet(3).to(device = device)
         elif dataset == "tiny":
             noise_model = Autoencoder().to(device = device)
+        elif dataset == 'femnist' or dataset == 'fashionmnist':
+            noise_model = MNISTAutoencoder().to(device = device)
     if dataset == 'femnist':
         if attack_mode == 'trigger_generation':
             fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args)
