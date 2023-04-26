@@ -281,7 +281,7 @@ def test_mali_normal_trigger(model, test_loader, target_label):
     correctly_labeled_samples = 0
     model.eval()
     for batch_idx, (data, target) in enumerate(test_loader):
-        #data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 1.0)
+        data, target = poison_data_with_normal_trigger(data, target, target_label, poison_frac = 1.0)
         data = data.to(m_device)
         target = target.to(m_device)
         output = model(data)
