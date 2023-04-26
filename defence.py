@@ -8,7 +8,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 class temp_args:
-    num_agents = 20
+    num_agents = 10
 
 args = temp_args()
 #args = args_parser()
