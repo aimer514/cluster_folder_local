@@ -24,6 +24,7 @@ class OwnCifar10(datasets.CIFAR10):
       else:
         temp_list = list(super().__getitem__(idx))
       return tuple(temp_list)
+      
 
 class SubCifar10(Dataset):
   def __init__(self, father_set, **kwargs):
@@ -212,7 +213,8 @@ def split_femnist(train_dataset, num_of_agent):
         tempSet = SubFedeMnist(id = net_dataidx_map[index], father_set = train_dataset)
         boring_list.append(tempSet)
         train_loader_list.append(torch.utils.data.DataLoader(tempSet, batch_size = 64, shuffle = True))
-        
+      return train_loader_list
+
 def split_train_data(train_dataset, num_of_agent = 10, non_iid = False, n_classes = 10):
     if non_iid == False:
         average_num_of_agent = math.floor(len(train_dataset) / num_of_agent)

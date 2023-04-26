@@ -190,7 +190,7 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
 
     if args.pretrained_checkpoint_path_batch_norm is not None:
         temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path_batch_norm), strict = False)
-        
+
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     num_of_agent = args.num_of_agent
@@ -452,7 +452,7 @@ if __name__ == '__main__':
             noise_model = UNet(3).to(device = device)
         elif dataset == "tiny":
             noise_model = Autoencoder().to(device = device)
-    if dataset != 'femnist':
+    if dataset == 'femnist':
         if attack_mode == 'trigger_generation':
             fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args)
         else:
