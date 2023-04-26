@@ -52,9 +52,11 @@ def args_parser():
     parser.add_argument('--dataset_path', type = str, default="/data",
                     help="path of dataset")
 
-    parser.add_argument('--pretrained_checkpoint_path', type = str, default="/",
+    parser.add_argument('--pretrained_checkpoint_path', type = str, default=None,
                 help="path of pretrained checkpoint")
     
+    parser.add_argument('--pretrained_checkpoint_path_batch_norm', type = str, default=None,
+            help="path of pretrained checkpoint of batch norm")
 
     parser.add_argument('--trigger_norm', type=int, default=3,
         help="norm of trigger")

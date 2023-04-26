@@ -185,6 +185,12 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
 
 
 def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args):
+    if args.pretrained_checkpoint_path is not None:
+        temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path), strict = False)
+
+    if args.pretrained_checkpoint_path_batch_norm is not None:
+        temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path_batch_norm), strict = False)
+        
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     num_of_agent = args.num_of_agent
@@ -278,6 +284,12 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
 
 
 def fe_normal_train(temp_model, train_loader_list, test_loader, args):
+    if args.pretrained_checkpoint_path is not None:
+        temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path), strict = False)
+
+    if args.pretrained_checkpoint_path_batch_norm is not None:
+        temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path_batch_norm), strict = False)
+
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     total_epoch = args.total_epoch  
