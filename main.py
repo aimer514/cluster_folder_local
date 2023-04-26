@@ -353,7 +353,7 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
             
             aggregation_dict[index] = temp_update
             vector_to_parameters(copy.deepcopy(start_parameter), temp_model.parameters())
-
+            index += 1
         if epoch_num >= 0 and rnd_num < possible and using_wandb:
             wandb.log({'mali_norm':torch.norm(aggregation_dict[0]).item()})
 
