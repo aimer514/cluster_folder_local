@@ -49,7 +49,7 @@ def args_parser():
         help="wandb run name")
     
     
-    parser.add_argument('--dataset_path', type = str, default="/data",
+    parser.add_argument('--dataset_path', type = str, default="./data",
                     help="path of dataset")
 
     parser.add_argument('--pretrained_checkpoint_path', type = str, default=None,
