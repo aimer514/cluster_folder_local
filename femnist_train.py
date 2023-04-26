@@ -176,7 +176,7 @@ def train_benign_model(classification_model, agent_train_loader):
     benign_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
     for epoch in range(training_epoch):
         temp_count = 0
-        for batch_idx, (data, target,_) in enumerate(agent_train_loader):
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
             data = data.to(device = m_device)
             target = target.to(device = m_device)
             benign_optimizer.zero_grad()
