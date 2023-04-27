@@ -222,8 +222,9 @@ def get_topk(model, mali_update, topk_ratio = 0.2):
 def apply_grad_mask(model, mask_grad_list):
     mask_grad_list_copy = iter(mask_grad_list)
     for name, parms in model.named_parameters():
+        next_grad = next(mask_grad_list_copy)
         if parms.requires_grad and parms.grad != None:
-            parms.grad = parms.grad * next(mask_grad_list_copy)
+            parms.grad = parms.grad * next_grad
 
 def model_dist_norm_var(model, target_params_variables, norm=2):
     size = 0
