@@ -58,7 +58,7 @@ def args_parser():
     parser.add_argument('--pretrained_checkpoint_path_batch_norm', type = str, default=None,
             help="path of pretrained checkpoint of batch norm")
 
-    parser.add_argument('--trigger_norm', type=int, default=3,
+    parser.add_argument('--trigger_norm', type=float, default=3,
         help="norm of trigger")
     
     parser.add_argument('--device', type=str, default="cuda:0",
