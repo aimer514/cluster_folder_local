@@ -143,7 +143,7 @@ def train_mali_model_with_noise(classification_model, noise_model, target_label,
     #0.05 for vgg, 0.2 for resnet
     # global_poison_frac = 0.2
     #0.01 for vgg, 0.1 for resnet
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -173,7 +173,7 @@ def train_benign_model(classification_model, agent_train_loader):
     #5
     training_epoch = 10
     classification_model.train()
-    benign_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    benign_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         temp_count = 0
         for batch_idx, (data, target) in enumerate(agent_train_loader):
@@ -305,7 +305,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
     training_epoch = 20
 
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -341,7 +341,7 @@ def train_mali_model_with_normal_trigger_topk_mode(classification_model, target_
 
     training_epoch = 20
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         
         for batch_idx, (data, target) in enumerate(agent_train_loader):
@@ -364,7 +364,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
     training_epoch = 20
 
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
@@ -396,7 +396,7 @@ def train_mali_model_with_normal_trigger_htb(classification_model, target_label,
     classification_model.train()
     training_epoch = 20
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.1, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0
