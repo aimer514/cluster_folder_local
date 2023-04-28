@@ -150,9 +150,10 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
             if agent < num_of_malicious and epoch_num >= 0 and rnd_num < possible:
                 if attack_mode == 'DBA':
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randint(0,3))
-                    
                 elif attack_mode == 'durable':
                     train_mali_model_with_normal_trigger_topk_mode(temp_model, target_label, train_loader_list[agent])
+                elif attack_mode == 'edge_case':
+                    train_mali_model_with_edge_case(temp_model, train_loader_list[agent])
                 else:
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent])
             else:
@@ -189,7 +190,10 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
         aggregate_batch_norm(temp_model, rnd_batch_norm_dict)
 
         benign_accuracy = test_model(temp_model, test_loader)
-        malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
+        if attack_mode == 'edge_case':
+            malicious_accuracy = test_mali_edge_case(temp_model)
+        else:
+            malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -360,9 +364,10 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
             if index == 0 and epoch_num >= 0 and rnd_num < possible:
                 if attack_mode == 'DBA':
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randint(0,3))
-                    
                 elif attack_mode == 'durable':
                     train_mali_model_with_normal_trigger_topk_mode(temp_model, target_label, train_loader_list[agent])
+                elif attack_mode == 'edge_case':
+                    train_mali_model_with_edge_case(temp_model, train_loader_list[agent])
                 else:
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent])
             else:
@@ -399,7 +404,10 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
         aggregate_batch_norm(temp_model, rnd_batch_norm_dict)
 
         benign_accuracy = test_model(temp_model, test_loader)
-        malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
+        if attack_mode == 'edge_case':
+            malicious_accuracy = test_mali_edge_case(temp_model)
+        else:
+            malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -411,6 +419,7 @@ def config_global_variable(args):
     import AutoEncoder
     import Unet
     import MNISTAutoencoder
+    data_loader.global_attack_mode = args.attack_mode
     Aggregation.agg_device = args.device
     Aggregation.agg_num_of_agent = args.num_of_agent
     Aggregation.agg_using_wandb = args.if_wandb
@@ -419,6 +428,17 @@ def config_global_variable(args):
     AutoEncoder.auto_device = args.device
     Unet.U_device = args.device
     MNISTAutoencoder.m_device = args.device
+    if args.attack_mode == 'edge_case':
+        if args.dataset == 'cifar10':
+            import cifar10_train
+            cifar10_train.cifar10_ec_dataset = torch.load(os.path.join(args.dataset_path, 'cifar10_edge_case_train.pt'))
+            temp_dataset = torch.load(os.path.join(args.dataset_path, 'cifar10_edge_case_test.pt'))
+            cifar10_train.cifar10_edge_test_loader = torch.utils.data.DataLoader(cifar10_EC(temp_dataset), batch_size = 32, shuffle = False)
+        elif args.dataset == 'femnist':
+            import femnist_train
+            femnist_train.femnist_ec_dataset = torch.load(os.path.join(args.dataset_path, 'femnist_edge_case_train.pt'))
+            temp_dataset = torch.load(os.path.join(args.dataset_path, 'femnist_edge_case_test.pt'))
+            femnist_train.femnist_edge_test_loader = torch.utils.data.DataLoader(femnist_EC(temp_dataset), batch_size = 32, shuffle = False)
 
 if __name__ == '__main__':
     args = args_parser()
@@ -466,6 +486,8 @@ if __name__ == '__main__':
         train_loader_list = split_train_data(train_dataset, num_of_agent = num_of_agent, non_iid = not iid, n_classes= n_classes)
     else:
         train_loader_list = split_femnist(train_dataset, num_of_agent = num_of_agent)
+
+            
     if dataset == "cifar10":
         temp_model = ResNet18(name = 'local').to(device)
     elif dataset == "tiny":

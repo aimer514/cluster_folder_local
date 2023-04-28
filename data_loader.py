@@ -7,6 +7,27 @@ import random
 import math
 import os
 import pickle
+global_attack_mode = None
+class cifar10_EC(Dataset):
+  def __init__(self, father_set, **kwargs):
+    self.dataset = father_set
+
+  def __len__(self):
+      return len(self.dataset)
+
+  def __getitem__(self, idx):
+      return  (self.dataset[idx], 9)
+
+class femnist_EC(Dataset):
+  def __init__(self, father_set, **kwargs):
+    self.dataset = father_set
+
+  def __len__(self):
+      return len(self.dataset)
+
+  def __getitem__(self, idx):
+      return  (self.dataset[idx], 1)
+  
 class OwnCifar10(datasets.CIFAR10):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -134,6 +155,9 @@ def load_dataset(dataset_name, path):
         transforms_list = []
         transforms_list.append(transforms.ToTensor())
 
+        if global_attack_mode == 'edge_case':
+            transforms_list.append(transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)))
+
         mnist_transform = transforms.Compose(transforms_list)
         train_dataset = OwnCifar10(root = path, train=True, download=True, transform=mnist_transform)
         test_dataset = OwnCifar10(root = path, train=False, download=True, transform=mnist_transform)
@@ -152,6 +176,11 @@ def load_dataset(dataset_name, path):
         
         return train_dataset, test_dataset
    elif dataset_name == 'femnist':
+        transforms_list = []
+        
+        if global_attack_mode == 'edge_case':
+            transforms_list.append(transforms.Normalize((0.1307,), (0.3081,)))
+
         train_dataset = load_femnist(os.path.join('../../data', 'FEMNIST', 'femnist_training.pickle'), train = True, transform = None)
         test_dataset = load_femnist(os.path.join('../../data', 'FEMNIST', 'femnist_test.pt'), train = False, transform = None)
         return train_dataset, test_dataset

@@ -2,6 +2,10 @@ import torch
 import copy
 import numpy as np
 from Unet import *
+import random 
+
+cifar10_ec_dataset = None
+cifar10_edge_test_loader = None
 def test_model(model, test_loader):
 
     total_test_number = 0
@@ -237,6 +241,19 @@ def model_dist_norm_var(model, target_params_variables, norm=2):
 
     return torch.norm(sum_var, norm)
 
+def poison_data_with_edgecase_trigger(data, target, poison_frac = 0.2):
+    data = copy.deepcopy(data)
+    target = copy.deepcopy(target)
+    poison_number = math.floor(len(target) * poison_frac)
+    random.shuffle(cifar10_ec_dataset)
+    for index in range(poison_number):
+        target[index] = 9
+        data[index]= cifar10_ec_dataset[index]
+
+    random_perm = torch.randperm(len(data))
+    data = data[random_perm]
+    target = target[random_perm]
+    return data.to(device = U_device), target.to(device = U_device)
 
 def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.2, agent_no = -1):
     data = copy.deepcopy(data)
@@ -272,6 +289,26 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     target = target[random_perm]
 
     return data.to(device = U_device), target.to(device = U_device)
+
+def test_mali_edge_case(temp_model):
+    total_test_number = 0
+    correctly_labeled_samples = 0
+    temp_model.eval()
+    for batch_idx, (data, target) in enumerate(cifar10_edge_test_loader):
+        output = temp_model(data)
+        total_test_number += len(output)
+        _, pred_labels = torch.max(output, 1)
+        pred_labels = pred_labels.view(-1)
+        #print('pred_labels is ')
+        #print(pred_labels)
+        #print('target is')
+        #print(target)
+        correctly_labeled_samples += torch.sum(torch.eq(pred_labels, target)).item()
+    temp_model.train()
+
+    acc = correctly_labeled_samples / total_test_number
+    print('mali accuracy  = {}'.format(acc))
+    return acc
 
 def test_mali_normal_trigger(model, test_loader, target_label):
 
@@ -323,6 +360,35 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
             temp_count += 1
             if temp_count % 500 == 0:
               print(loss)
+
+def train_mali_model_with_edge_case(classification_model, agent_train_loader):
+    classification_model.train()
+    training_epoch = 10
+
+
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    for epoch in range(training_epoch):
+        total_loss = 0
+        temp_count = 0
+        
+        for batch_idx, (data, target) in enumerate(agent_train_loader):
+            mali_optimizer.zero_grad()
+            #0.05 for vgg, 0.2 for resnet
+            data, target = poison_data_with_edgecase_trigger(data, 9, poison_frac = 0.2)
+
+            output = classification_model(data)
+
+            criterion = nn.CrossEntropyLoss()
+            loss = criterion(output, target.view(-1, ))
+            
+            loss.backward()
+
+            mali_optimizer.step()
+
+            temp_count += 1
+            if temp_count % 500 == 0:
+              print(loss)
+
 
 def train_mali_model_with_normal_trigger_topk_mode(classification_model, target_label, agent_train_loader):
     initial_global_model_params = parameters_to_vector(classification_model.parameters()).detach()

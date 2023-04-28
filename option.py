@@ -77,5 +77,9 @@ def args_parser():
     parser.add_argument('--few_shot_stop_epoch', type = int, default=0,
                         help="few shot stop epoch(epoch to stop attack)")
     
+    parser.add_argument('--poison_frac', type=float, default=0.2,
+            help="poison fraction of poisoned dataset")
+    
+
     args = parser.parse_args()
     return args
