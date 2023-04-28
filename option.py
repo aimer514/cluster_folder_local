@@ -70,5 +70,12 @@ def args_parser():
     parser.add_argument('--server_lr', type=float, default=1,
     help="lr of server")
 
+    parser.add_argument('--few_shot', type = boolean_string, default=False,
+                        help="few_shot or not")
+
+    
+    parser.add_argument('--few_shot_stop_epoch', type = int, default=0,
+                        help="few shot stop epoch(epoch to stop attack)")
+    
     args = parser.parse_args()
     return args

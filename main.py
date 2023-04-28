@@ -12,6 +12,10 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
+
+    if args.few_shot == True:
+        possible = 1
+        
     aggregation_dict = {}
     norm_for_one_sample = args.trigger_norm
     batch_norm_list = get_batch_norm_list(temp_model)
@@ -32,6 +36,9 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
 
         aggregation_dict = {}
         rnd_num = random.random()
+        if args.few_shot == True and args.few_shot_stop_epoch <= epoch_num:
+            possible = 0
+
         if args.save_checkpoint_path is not None:
             if epoch_num % 5 == 0:
                 torch.save(temp_model.state_dict(), args.save_checkpoint_path + '/rnd_{}_model.pt'.format(epoch_num))
@@ -102,6 +109,10 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
+
+    if args.few_shot == True:
+        possible = 1
+
     aggregation_dict = {}
 
     batch_norm_list = get_batch_norm_list(temp_model)
@@ -119,6 +130,8 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
 
         aggregation_dict = {}
         rnd_num = random.random()
+        if args.few_shot == True and args.few_shot_stop_epoch <= epoch_num:
+            possible = 0
         if args.save_checkpoint_path is not None:
             if epoch_num % 5 == 0:
                 torch.save(temp_model.state_dict(), args.save_checkpoint_path + '/rnd_{}_model.pt'.format(epoch_num))
@@ -197,6 +210,9 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
+    if args.few_shot == True:
+        possible = 1
+        
     aggregation_dict = {}
     norm_for_one_sample = args.trigger_norm
     batch_norm_list = get_batch_norm_list(temp_model)
@@ -217,6 +233,10 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
 
         aggregation_dict = {}
         rnd_num = random.random()
+
+        if args.few_shot == True and args.few_shot_stop_epoch <= epoch_num:
+            possible = 0
+            
         if args.save_checkpoint_path is not None:
             if epoch_num % 5 == 0:
                 torch.save(temp_model.state_dict(), args.save_checkpoint_path + '/rnd_{}_model.pt'.format(epoch_num))
@@ -295,6 +315,10 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
+
+    if args.few_shot == True:
+        possible = 1
+        
     aggregation_dict = {}
     num_of_agent = args.num_of_agent
 
@@ -313,6 +337,10 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
 
         aggregation_dict = {}
         rnd_num = random.random()
+
+        if args.few_shot == True and args.few_shot_stop_epoch <= epoch_num:
+            possible = 0
+
         if args.save_checkpoint_path is not None:
             if epoch_num % 5 == 0:
                 torch.save(temp_model.state_dict(), args.save_checkpoint_path + '/rnd_{}_model.pt'.format(epoch_num))
