@@ -181,8 +181,8 @@ def load_dataset(dataset_name, path):
         if global_attack_mode == 'edge_case':
             transforms_list.append(transforms.Normalize((0.1307,), (0.3081,)))
 
-        train_dataset = load_femnist(os.path.join('../../data', 'FEMNIST', 'femnist_training.pickle'), train = True, transform = None)
-        test_dataset = load_femnist(os.path.join('../../data', 'FEMNIST', 'femnist_test.pt'), train = False, transform = None)
+        train_dataset = load_femnist(os.path.join(path, 'femnist_training.pickle'), train = True, transform = None)
+        test_dataset = load_femnist(os.path.join(path, 'femnist_test.pt'), train = False, transform = None)
         return train_dataset, test_dataset
    
    elif dataset_name == 'fashionmnist':
