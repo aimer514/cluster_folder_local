@@ -96,6 +96,8 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
 
         benign_accuracy = test_model(temp_model, test_loader)
         malicious_accuracy = test_mali_noise(temp_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample)
+        if args.few_shot == True and malicious_accuracy > 0.95:
+            possible = 0
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -194,6 +196,8 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
             malicious_accuracy = test_mali_edge_case(temp_model)
         else:
             malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
+        if args.few_shot == True and malicious_accuracy > 0.95:
+            possible = 0
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -300,6 +304,8 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
 
         benign_accuracy = test_model(temp_model, test_loader)
         malicious_accuracy = test_mali_noise(temp_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample)
+        if args.few_shot == True and malicious_accuracy > 0.95:
+            possible = 0
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -408,6 +414,8 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
             malicious_accuracy = test_mali_edge_case(temp_model)
         else:
             malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
+        if args.few_shot == True and malicious_accuracy > 0.95:
+            possible = 0
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
