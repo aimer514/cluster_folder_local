@@ -166,7 +166,7 @@ def load_dataset(dataset_name, path):
         train_dataset.targets, test_dataset.targets = torch.LongTensor(train_dataset.targets), torch.LongTensor(test_dataset.targets)
         return train_dataset, test_dataset
    
-   elif dataset_name == 'tinyimagenet':
+   elif dataset_name == 'tiny':
         transforms_list = []
         transforms_list.append(transforms.ToTensor())
         mnist_transform = transforms.Compose(transforms_list)
