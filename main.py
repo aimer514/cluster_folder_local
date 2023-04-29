@@ -429,6 +429,7 @@ def config_global_variable(args):
     import AutoEncoder
     import Unet
     import MNISTAutoencoder
+    import data_loader
     data_loader.global_attack_mode = args.attack_mode
     Aggregation.agg_device = args.device
     Aggregation.agg_num_of_agent = args.num_of_agent
