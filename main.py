@@ -12,7 +12,7 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
     total_epoch = args.total_epoch  
     target_label = args.target_label
     possible = args.possibility
-
+    print('attack mode trigger generation (not femnist)')
     if args.few_shot == True:
         possible = 1
         
@@ -150,6 +150,7 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
             #print(agent)
             load_batch_norm(temp_model, 0, batch_norm_list, agent_batch_norm_list)
             if agent < num_of_malicious and epoch_num >= 0 and rnd_num < possible:
+                print('attack mode is {}'.format(attack_mode))
                 if attack_mode == 'DBA':
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randint(0,3))
                 elif attack_mode == 'durable':
@@ -211,7 +212,7 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
 
     if args.pretrained_checkpoint_path_batch_norm is not None:
         temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path_batch_norm), strict = False)
-
+    print('attack mode is trigger generation')
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     num_of_agent = args.num_of_agent
@@ -368,6 +369,7 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
             #print(agent)
             load_batch_norm(temp_model, 0, batch_norm_list, agent_batch_norm_list)
             if index == 0 and epoch_num >= 0 and rnd_num < possible:
+                print('attack mode is {}'.format(attack_mode))
                 if attack_mode == 'DBA':
                     train_mali_model_with_normal_trigger(temp_model, target_label, train_loader_list[agent], agent_no = random.randint(0,3))
                 elif attack_mode == 'durable':

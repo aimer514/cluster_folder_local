@@ -291,6 +291,7 @@ def poison_data_with_normal_trigger(data, target, target_label, poison_frac = 0.
     return data.to(device = U_device), target.to(device = U_device)
 
 def test_mali_edge_case(temp_model):
+    print('start to test mali edge case')
     total_test_number = 0
     correctly_labeled_samples = 0
     temp_model.eval()
@@ -362,6 +363,7 @@ def train_mali_model_with_normal_trigger(classification_model, target_label, age
               print(loss)
 
 def train_mali_model_with_edge_case(classification_model, agent_train_loader):
+    print('start to train mali edge case')
     classification_model.train()
     training_epoch = 10
 
