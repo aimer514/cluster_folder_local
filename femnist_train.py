@@ -342,7 +342,7 @@ def test_mali_normal_trigger(model, test_loader, target_label):
 def train_mali_model_with_edge_case(classification_model, agent_train_loader):
     print('start to train mali edge case')
     classification_model.train()
-    training_epoch = 10
+    training_epoch = 5
 
 
     mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.001, )
@@ -353,7 +353,7 @@ def train_mali_model_with_edge_case(classification_model, agent_train_loader):
         for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             #0.05 for vgg, 0.2 for resnet
-            data, target = poison_data_with_edgecase_trigger(data, target, poison_frac = 0.2)
+            data, target = poison_data_with_edgecase_trigger(data, target, poison_frac = 0.05)
 
             output = classification_model(data)
             criterion = nn.CrossEntropyLoss()
