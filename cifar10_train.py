@@ -296,6 +296,8 @@ def test_mali_edge_case(temp_model):
     correctly_labeled_samples = 0
     temp_model.eval()
     for batch_idx, (data, target) in enumerate(cifar10_edge_test_loader):
+        data = data.to(device = U_device)
+        target = target.to(device = U_device)
         output = temp_model(data)
         total_test_number += len(output)
         _, pred_labels = torch.max(output, 1)
@@ -376,7 +378,7 @@ def train_mali_model_with_edge_case(classification_model, agent_train_loader):
         for batch_idx, (data, target) in enumerate(agent_train_loader):
             mali_optimizer.zero_grad()
             #0.05 for vgg, 0.2 for resnet
-            data, target = poison_data_with_edgecase_trigger(data, 9, poison_frac = 0.2)
+            data, target = poison_data_with_edgecase_trigger(data, target, poison_frac = 0.2)
 
             output = classification_model(data)
 
