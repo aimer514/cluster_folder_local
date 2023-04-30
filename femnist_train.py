@@ -310,6 +310,9 @@ def test_mali_edge_case(temp_model):
         #print(target)
         correctly_labeled_samples += torch.sum(torch.eq(pred_labels, target)).item()
     temp_model.train()
+    acc = correctly_labeled_samples / total_test_number
+    print('mali accuracy  = {}'.format(acc))
+    return acc
 
 def test_mali_normal_trigger(model, test_loader, target_label):
 
