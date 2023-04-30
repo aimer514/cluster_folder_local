@@ -16,7 +16,7 @@ class cifar10_EC(Dataset):
       return len(self.dataset)
 
   def __getitem__(self, idx):
-      return  (self.dataset[idx], 9)
+      return  (self.dataset[idx], 2)
 
 class femnist_EC(Dataset):
   def __init__(self, father_set, **kwargs):

@@ -342,10 +342,10 @@ def test_mali_normal_trigger(model, test_loader, target_label):
 def train_mali_model_with_edge_case(classification_model, agent_train_loader):
     print('start to train mali edge case')
     classification_model.train()
-    training_epoch = 20
+    training_epoch = 10
 
 
-    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.01, )
+    mali_optimizer = torch.optim.SGD(classification_model.parameters(), lr=0.001, )
     for epoch in range(training_epoch):
         total_loss = 0
         temp_count = 0

@@ -247,7 +247,7 @@ def poison_data_with_edgecase_trigger(data, target, poison_frac = 0.2):
     poison_number = math.floor(len(target) * poison_frac)
     random.shuffle(cifar10_ec_dataset)
     for index in range(poison_number):
-        target[index] = 9
+        target[index] = 2
         data[index]= cifar10_ec_dataset[index]
 
     random_perm = torch.randperm(len(data))
