@@ -41,6 +41,11 @@ def args_parser():
     parser.add_argument('--if_wandb', type = boolean_string, default=False,
                 help="wandb or not")
     
+    parser.add_argument('--if_tb', type = boolean_string, default=False,
+                help="tensorboard or not")
+    
+    parser.add_argument('--tb_path', type = str, default = None,
+                help="path of saving tensorboard")
     
     parser.add_argument('--wandb_project_name', type = str, default="",
             help="wandb project name")

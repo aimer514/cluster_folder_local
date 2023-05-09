@@ -6,7 +6,9 @@ global using_wandb
 from Aggregation import *
 from classifier_models.EMNIST_model import *
 from classifier_models.FASHION_model import *
-def trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args):
+from torch.utils.tensorboard import SummaryWriter
+
+def trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args, writer = None):
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     total_epoch = args.total_epoch  
@@ -98,6 +100,9 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
         malicious_accuracy = test_mali_noise(temp_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample)
         if args.few_shot == True and malicious_accuracy > 0.95:
             possible = 0
+        if writer != None:
+             writer.add_scalar('benign_acc', benign_accuracy)
+             writer.add_scalar('mali_acc', malicious_accuracy)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -105,7 +110,7 @@ def trigger_generation_train(temp_model, noise_model, train_loader_list, test_lo
         wandb.finish()
 
 
-def normal_train(temp_model, train_loader_list, test_loader, args):
+def normal_train(temp_model, train_loader_list, test_loader, args, writer = None):
     init_sparsefed(temp_model)
     init_foolsgold(temp_model)
     total_epoch = args.total_epoch  
@@ -199,6 +204,9 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
             malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
         if args.few_shot == True and malicious_accuracy > 0.95:
             possible = 0
+        if writer != None:
+             writer.add_scalar('benign_acc', benign_accuracy)
+             writer.add_scalar('mali_acc', malicious_accuracy)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -206,7 +214,7 @@ def normal_train(temp_model, train_loader_list, test_loader, args):
         wandb.finish()
 
 
-def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args):
+def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args, writer = None):
     if args.pretrained_checkpoint_path is not None:
         temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path), strict = False)
 
@@ -307,6 +315,9 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
         malicious_accuracy = test_mali_noise(temp_model, noise_model, test_loader, target_label = target_label, norm_bound = norm_for_one_sample)
         if args.few_shot == True and malicious_accuracy > 0.95:
             possible = 0
+        if writer != None:
+             writer.add_scalar('benign_acc', benign_accuracy)
+             writer.add_scalar('mali_acc', malicious_accuracy)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -314,7 +325,7 @@ def fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test
         wandb.finish()
 
 
-def fe_normal_train(temp_model, train_loader_list, test_loader, args):
+def fe_normal_train(temp_model, train_loader_list, test_loader, args, writer = None):
     if args.pretrained_checkpoint_path is not None:
         temp_model.load_state_dict(torch.load(args.pretrained_checkpoint_path), strict = False)
 
@@ -418,6 +429,9 @@ def fe_normal_train(temp_model, train_loader_list, test_loader, args):
             malicious_accuracy = test_mali_normal_trigger(temp_model, test_loader, target_label)
         if args.few_shot == True and malicious_accuracy > 0.95:
             possible = 0
+        if writer != None:
+             writer.add_scalar('benign_acc', benign_accuracy)
+             writer.add_scalar('mali_acc', malicious_accuracy)
         if using_wandb:
             wandb.log({"mali_acc": malicious_accuracy, "benign_accuracy": benign_accuracy})
 
@@ -464,7 +478,11 @@ if __name__ == '__main__':
     iid = args.iid
     using_wandb = args.if_wandb
     attack_mode = args.attack_mode
-
+    if_tb = args.if_tb
+    
+    writer = None
+    if if_tb:
+        writer = SummaryWriter(args.tb_path)
 
     config_global_variable(args)
     print("args is")
@@ -517,11 +535,11 @@ if __name__ == '__main__':
             noise_model = MNISTAutoencoder().to(device = device)
     if dataset == 'femnist':
         if attack_mode == 'trigger_generation':
-            fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args)
+            fe_trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args, writer)
         else:
-            fe_normal_train(temp_model, train_loader_list, test_loader, args)
+            fe_normal_train(temp_model, train_loader_list, test_loader, args, writer)
     else:
         if attack_mode == 'trigger_generation':
-            trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args)
+            trigger_generation_train(temp_model, noise_model, train_loader_list, test_loader, args, writer)
         else:
-            normal_train(temp_model, train_loader_list, test_loader, args)
+            normal_train(temp_model, train_loader_list, test_loader, args, writer)
